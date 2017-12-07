@@ -6,15 +6,41 @@ import csv
 from pandas_datareader import data, wb
 import glob, os
 
-ticker = ['wix']
+ticker = ['ebay']
 ticker_name = ticker[0]
 
-def get_stock_prices_from_yahoo():
+DATE_FORMAT_STRING = "%d/%m/%y"
+str_to_datetime = lambda s: pd.datetime.strptime(s, DATE_FORMAT_STRING)
+
+def get_announcement_dates_from_csv():
+    # df = pd.read_csv('announcement_date_data.csv', parse_dates=['Date'], date_parser=str_to_datetime, index_col=0)
+    file_name = 'announcement_date_data.csv'
+    df = pd.read_csv(file_name)
+
+    if df['Ticker'].str.contains(ticker_name).any():
+        #retrieve all dates from Date column where Ticker column value == ticker_name
+        dates = df[df['Ticker'] == ticker_name]['Date']
+        # print "dates: "
+        # print ""
+        # print dates
+        # print ""
+
+        #convert dates results (pandas.series) to a list
+        dates_formatted_list = dates.tolist()
+        print "dates_formatted", dates_formatted_list
+        get_stock_prices_from_yahoo(dates_formatted_list)
+    else:
+        print "ERROR: {ticker} is not included in {file}".format(ticker=ticker_name, file=file_name)
+
+    return df
+
+def get_stock_prices_from_yahoo(dates_formatted_list):
     data_source = 'yahoo'
     start_date = '2014/11/05'
     end_date = '2017/11/27'
 
     company_data = data.DataReader(ticker, data_source, start_date, end_date)
+
     df = company_data.ix['Close']
 
     #only pull weekdays
@@ -28,8 +54,8 @@ def get_stock_prices_from_yahoo():
 
     # pd.to_datetime(df.index,format=date_format)
 
-    file_name = '{ticker}_price_data.csv'.format(ticker='_'.join(ticker))
-    df.to_csv(file_name, sep='\t')
+    # file_name = '{ticker}_price_data.csv'.format(ticker='_'.join(ticker))
+    # df.to_csv(file_name, sep='\t')
 
     # print "columns: ", df.columns[0]
     # print "index: ", df.index
@@ -37,21 +63,22 @@ def get_stock_prices_from_yahoo():
     df = df.reset_index()
     df = df.rename(columns={'index':'Date', ticker[0]: 'Close'})
 
-    generate_announcement_date_masks(df)
+    generate_announcement_date_masks(df, dates_formatted_list)
     return df
 
 def create_mask(date, df):
     if not isinstance(date, datetime):
         raise Exception('date passed into create_mask() was not python datetime')
 
-    print df.head()
+    # print df.head()
     mask = (df.Date.dt.year == date.year) & (df.Date.dt.month == date.month) & (df.Date.dt.day == date.day)
     # print "mask", mask
     return mask
 
-def generate_announcement_date_masks(df):
-    dates = ['2014/11/05','2015/02/11','2015/05/06','2015/08/05','2015/11/04','2016/02/10','2016/05/04',
-              '2016/07/27','2016/11/10','2017/02/15','2017/05/10','2017/07/27', '2017/11/08']
+def generate_announcement_date_masks(df, dates_formatted_list):
+    # dates = ['2014/11/05','2015/02/11','2015/05/06','2015/08/05','2015/11/04','2016/02/10','2016/05/04',
+    #           '2016/07/27','2016/11/10','2017/02/15','2017/05/10','2017/07/27', '2017/11/08']
+    dates = dates_formatted_list
 
     announcement_date_string_format = '%Y/%m/%d'
     announcement_dates = pd.to_datetime(dates, format=announcement_date_string_format)
@@ -98,7 +125,7 @@ def get_stock_data_on_key_dates(announcement_date_mask, df):
 
             #account for business days
             key_date_for_announcement_date_business_days = announcement_date + BDay(key_date_offset)
-            print "key_date_for_announcement_date_business_days", key_date_for_announcement_date_business_days
+            # print "key_date_for_announcement_date_business_days", key_date_for_announcement_date_business_days
 
             key_date_mask = create_mask(key_date_for_announcement_date_business_days, df)
             # print "key_date_mask",key_date_mask
@@ -137,7 +164,7 @@ def create_date_mask(initial_date, offset, df):
     desired_date_with_business_days = initial_date + BDay(offset)
 
     # desired_date_with_business_days = initial_date + bday_us(offset)
-    print "desired_date_with_business_days", desired_date_with_business_days
+    # print "desired_date_with_business_days", desired_date_with_business_days
     # desired_date = initial_date + timedelta(days=offset)
 
     datetime_index = pd.DatetimeIndex(df.Date)
@@ -145,7 +172,7 @@ def create_date_mask(initial_date, offset, df):
 
     date_mask = (datetime_index >= desired_date_with_business_days) & (datetime_index <= mask_offset_comparison)
 
-    print "date_mask", date_mask
+    # print "date_mask", date_mask
     return date_mask
 
 def create_csv_row(announcement_date, key_date_stocks):
@@ -187,7 +214,7 @@ def create_csv_row(announcement_date, key_date_stocks):
         row[price_at_day_offset_key_string] = round(stock_price_key_date_close,2)
         row[price_absolute_difference_key_string] = round(-(announcement_date_price - stock_price_key_date_close),2)
         row[price_percent_difference_key_string] = round(-((float(announcement_date_price - stock_price_key_date_close)/stock_price_key_date_close)) * 100 ,2)
-        # row['ticker'] = ticker_name
+        row['ticker'] = ticker_name
 
     return row
 
@@ -195,7 +222,7 @@ def analyze_results(output_data):
     '''
     show key date, close price, and % change relative to announcement_date
     column_headings => announcement-date, offset_1, offset_1_%, ...
-     list of dictionaries (with same keys) => csv
+     list of dictionaries (with same keys) => csv`
      output_data = {< announcement_date >: { < key_dateoffset >: stock_object, < key_date_offset_2 >: stock_object}}
 
     :param output_data:
@@ -222,7 +249,6 @@ def output_results_to_csv(output_data_for_csv):
     df = pd.DataFrame(output_data_for_csv)
     df = df.sort_values(by='announcement_date', ascending=False)
     df.reset_index()
-
 
     # output df to csv
     file_name = '{ticker}_stock_price_results.csv'.format(ticker='_'.join(ticker))
@@ -251,6 +277,7 @@ def output_results_to_csv(output_data_for_csv):
             'price_at_day_30',
             'absolute_price_difference_at_day_30',
             'percent_price_difference_at_day_30',
+            'ticker'
         ]
 
         writer = csv.DictWriter(outfile, fieldnames=fieldnames)
@@ -268,15 +295,18 @@ def combine_all_results_ordered(fieldnames):
     results = pd.DataFrame([])
 
     for counter, file in enumerate(glob.glob("*results_ordered*")):
-        name_df = pd.read_csv(file, usecols=fieldnames, index_col=None)
-        results = results.append(name_df)
+        df = pd.read_csv(file, usecols=fieldnames, index_col=None)
+        df.set_index('ticker', inplace=True)
+
+        results = results.append(df)
 
     results_csv = results.to_csv("/Users/Josh/Documents/startup/stock_movements/combined_results.csv")
 
     return results_csv
 
 def main():
-    get_stock_prices_from_yahoo()
+    get_announcement_dates_from_csv()
+    # get_stock_prices_from_yahoo()
 
 main()
 
@@ -296,3 +326,5 @@ def get_stock_prices_from_csv():
     generate_announcement_date_masks(df)
     return df
 '''
+
+
