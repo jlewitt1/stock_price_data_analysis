@@ -1,5 +1,5 @@
 announcement_date,announcement_date_close_price,price_at_day_1,absolute_price_difference_at_day_1,percent_price_difference_at_day_1,price_at_day_3,absolute_price_difference_at_day_3,percent_price_difference_at_day_3,price_at_day_5,absolute_price_difference_at_day_5,percent_price_difference_at_day_5,price_at_day_10,absolute_price_difference_at_day_10,percent_price_difference_at_day_10,price_at_day_30,absolute_price_difference_at_day_30,percent_price_difference_at_day_30,ticker
-2017-10-18 00:00:00,37.97,37.29,-0.68,-1.82,36.83,-1.14,-3.1,36.68,-1.29,-3.52,37.54,-0.43,-1.15,,,,ebay
+2017-10-18 00:00:00,37.97,37.29,-0.68,-1.82,36.83,-1.14,-3.1,36.68,-1.29,-3.52,37.54,-0.43,-1.15,34.38,-3.59,-10.44,ebay
 2017-07-20 00:00:00,37.18,36.61,-0.57,-1.56,36.32,-0.86,-2.37,36.17,-1.01,-2.79,35.71,-1.47,-4.12,36.13,-1.05,-2.91,ebay
 2017-03-01 00:00:00,34.27,33.91,-0.36,-1.06,33.64,-0.63,-1.87,33.32,-0.95,-2.85,32.89,-1.38,-4.2,34.27,-0.0,-0.0,ebay
 2017-01-25 00:00:00,30.23,31.74,1.51,4.76,32.17,1.94,6.03,32.18,1.95,6.06,33.25,3.02,9.08,33.32,3.09,9.27,ebay

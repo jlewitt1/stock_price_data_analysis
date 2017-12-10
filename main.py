@@ -6,7 +6,7 @@ import csv
 from pandas_datareader import data, wb
 import glob, os
 
-ticker = ['ebay']
+ticker = ['pcln']
 ticker_name = ticker[0]
 
 DATE_FORMAT_STRING = "%d/%m/%y"
@@ -14,20 +14,18 @@ str_to_datetime = lambda s: pd.datetime.strptime(s, DATE_FORMAT_STRING)
 
 def get_announcement_dates_from_csv():
     # df = pd.read_csv('announcement_date_data.csv', parse_dates=['Date'], date_parser=str_to_datetime, index_col=0)
-    file_name = 'announcement_date_data.csv'
+    file_name = './announcement_dates/announcement_date_data_v2.csv'
     df = pd.read_csv(file_name)
+    # print df
 
     if df['Ticker'].str.contains(ticker_name).any():
         #retrieve all dates from Date column where Ticker column value == ticker_name
         dates = df[df['Ticker'] == ticker_name]['Date']
-        # print "dates: "
-        # print ""
-        # print dates
-        # print ""
+        print dates
 
         #convert dates results (pandas.series) to a list
         dates_formatted_list = dates.tolist()
-        print "dates_formatted", dates_formatted_list
+        # print "dates_formatted_list", dates_formatted_list
         get_stock_prices_from_yahoo(dates_formatted_list)
     else:
         print "ERROR: {ticker} is not included in {file}".format(ticker=ticker_name, file=file_name)
@@ -37,7 +35,7 @@ def get_announcement_dates_from_csv():
 def get_stock_prices_from_yahoo(dates_formatted_list):
     data_source = 'yahoo'
     start_date = '2014/11/05'
-    end_date = '2017/11/27'
+    end_date = '2017/12/10'
 
     company_data = data.DataReader(ticker, data_source, start_date, end_date)
 
@@ -78,10 +76,10 @@ def create_mask(date, df):
 def generate_announcement_date_masks(df, dates_formatted_list):
     # dates = ['2014/11/05','2015/02/11','2015/05/06','2015/08/05','2015/11/04','2016/02/10','2016/05/04',
     #           '2016/07/27','2016/11/10','2017/02/15','2017/05/10','2017/07/27', '2017/11/08']
-    dates = dates_formatted_list
+    print "dates_formatted_list", dates_formatted_list
 
     announcement_date_string_format = '%Y/%m/%d'
-    announcement_dates = pd.to_datetime(dates, format=announcement_date_string_format)
+    announcement_dates = pd.to_datetime(dates_formatted_list, format=announcement_date_string_format)
 
     # announcement_dates = [str_to_datetime(date) for date in dates]
     # print('announcement_dates:', announcement_dates)
