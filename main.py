@@ -1,20 +1,20 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import sys
 import pandas as pd
 from pandas.tseries.offsets import BDay
 import csv
-from pandas_datareader import data, wb
+from pandas_datareader import data
 import glob, os
 
-ticker = ['pcln']
+ticker = ['shop']
 ticker_name = ticker[0]
 
-DATE_FORMAT_STRING = "%d/%m/%y"
-str_to_datetime = lambda s: pd.datetime.strptime(s, DATE_FORMAT_STRING)
+# DATE_FORMAT_STRING = "%d/%m/%y"
+# str_to_datetime = lambda s: pd.datetime.strptime(s, DATE_FORMAT_STRING)
 
 def get_announcement_dates_from_csv():
     # df = pd.read_csv('announcement_date_data.csv', parse_dates=['Date'], date_parser=str_to_datetime, index_col=0)
-    file_name = './announcement_dates/announcement_date_data_v2.csv'
+    file_name = './announcement_dates/announcement_date_data_v3.csv'
     df = pd.read_csv(file_name)
     # print df
 
@@ -34,7 +34,7 @@ def get_announcement_dates_from_csv():
 
 def get_stock_prices_from_yahoo(dates_formatted_list):
     data_source = 'yahoo'
-    start_date = '2014/11/05'
+    start_date = '2011/1/1'
     end_date = '2017/12/10'
 
     company_data = data.DataReader(ticker, data_source, start_date, end_date)
@@ -49,14 +49,6 @@ def get_stock_prices_from_yahoo(dates_formatted_list):
     # with the latest available price for each instrument.
     df = df.reindex(all_weekdays)
     df = df.fillna(method='ffill')
-
-    # pd.to_datetime(df.index,format=date_format)
-
-    # file_name = '{ticker}_price_data.csv'.format(ticker='_'.join(ticker))
-    # df.to_csv(file_name, sep='\t')
-
-    # print "columns: ", df.columns[0]
-    # print "index: ", df.index
 
     df = df.reset_index()
     df = df.rename(columns={'index':'Date', ticker[0]: 'Close'})
@@ -74,18 +66,13 @@ def create_mask(date, df):
     return mask
 
 def generate_announcement_date_masks(df, dates_formatted_list):
-    # dates = ['2014/11/05','2015/02/11','2015/05/06','2015/08/05','2015/11/04','2016/02/10','2016/05/04',
-    #           '2016/07/27','2016/11/10','2017/02/15','2017/05/10','2017/07/27', '2017/11/08']
-    print "dates_formatted_list", dates_formatted_list
+    # print "dates_formatted_list", dates_formatted_list
 
     announcement_date_string_format = '%Y/%m/%d'
     announcement_dates = pd.to_datetime(dates_formatted_list, format=announcement_date_string_format)
 
     # announcement_dates = [str_to_datetime(date) for date in dates]
     # print('announcement_dates:', announcement_dates)
-
-    #fixing the first date
-    #print 'df at location 772', df.iloc[[770]]
 
     announcement_date_masks = [create_mask(announcement_date, df) for announcement_date in announcement_dates]
     # print "announcement_date_masks", announcement_date_masks #type = 'list'
@@ -249,13 +236,15 @@ def output_results_to_csv(output_data_for_csv):
     df.reset_index()
 
     # output df to csv
+    root_original = '/Users/Josh/Documents/startup/stock_movements/ticker_results/original'
     file_name = '{ticker}_stock_price_results.csv'.format(ticker='_'.join(ticker))
-    df.to_csv(file_name, index=False)
+    df.to_csv(root_original + '/' + file_name, index=False)
 
+    root_ordered = '/Users/Josh/Documents/startup/stock_movements/ticker_results/ordered'
     ordered_file_name = '{ticker}_stock_price_results_ordered.csv'.format(ticker='_'.join(ticker))
 
     #re-order CSV columns
-    with open(file_name, 'r') as infile, open(ordered_file_name, 'w') as outfile:
+    with open(root_original + '/' + file_name, 'r') as infile, open(root_ordered + '/' + ordered_file_name, 'w') as outfile:
         # output dict needs a list for new column ordering
         fieldnames = [
             'announcement_date',
@@ -289,7 +278,7 @@ def output_results_to_csv(output_data_for_csv):
     return outfile
 
 def combine_all_results_ordered(fieldnames):
-    os.chdir("/Users/Josh/Documents/startup/stock_movements")
+    os.chdir("/Users/Josh/Documents/startup/stock_movements/ticker_results/ordered")
     results = pd.DataFrame([])
 
     for counter, file in enumerate(glob.glob("*results_ordered*")):
@@ -298,7 +287,7 @@ def combine_all_results_ordered(fieldnames):
 
         results = results.append(df)
 
-    results_csv = results.to_csv("/Users/Josh/Documents/startup/stock_movements/combined_results.csv")
+    results_csv = results.to_csv("/Users/Josh/Documents/startup/stock_movements/combined_results/combined_results.csv")
 
     return results_csv
 
@@ -307,22 +296,5 @@ def main():
     # get_stock_prices_from_yahoo()
 
 main()
-
-
-'''
-#keep date formatting consistent with CSV
-DATE_FORMAT_STRING = "%d/%m/%y"
-str_to_datetime = lambda s: pd.datetime.strptime(s, DATE_FORMAT_STRING)
-
-def get_stock_prices_from_csv():
-    df = pd.read_csv('WIX_share_prices.csv', parse_dates=['Date'], date_parser=str_to_datetime, index_col=0)
-    df = df.reset_index()
-    print "df", df
-    #pd.to_datetime(df.Date)
-    #df.Date = pd.to_datetime(df.Date, format=DATE_FORMAT_STRING)
-
-    generate_announcement_date_masks(df)
-    return df
-'''
 
 
